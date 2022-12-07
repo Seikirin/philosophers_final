@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/06 10:39:12 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/06 12:40:34 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/07 07:54:59 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,13 @@ typedef struct s_philo
 	int number;
 	int dead;
 	int ate;
+
+	int number_of_philosophers;
+	int time_to_die;
+	int time_to_eat;
+	int time_to_sleep;
+	int number_of_times_each_philosopher_must_eat;
+
 	time_t lastate;
 	t_vars *vars;
 	pthread_t id;

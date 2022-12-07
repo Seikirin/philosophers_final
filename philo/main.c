@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/06 10:39:05 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/06 12:53:55 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/07 07:57:59 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,6 +41,19 @@ void setforks(t_philo *philo, t_vars *vars)
 		philo->left = &(vars->forks[philo->number]);
 }
 
+void unlockandsleep(t_philo *philo)
+{
+	if (philo->dead)
+		return ;
+	pthread_mutex_unlock(philo->right);
+	pthread_mutex_unlock(philo->left);
+	philo->lastate = timestamp();
+	philo->ate++;
+	printf("%zu %d is sleeping\n", timestamp(), philo->number);
+	actualsleep(philo->time_to_sleep);
+	printf("%zu %d is thinking\n", timestamp(), philo->number);
+}
+
 void *live(void *content)
 {
 	t_philo *philo;
@@ -57,16 +70,8 @@ void *live(void *content)
 		if (philo->dead)
 			break ;
 		printf("%zu %d is eating\n", timestamp(), philo->number);
-		actualsleep(philo->vars->time_to_eat);
-		if (philo->dead)
-			break ;
-		pthread_mutex_unlock(philo->right);
-		pthread_mutex_unlock(philo->left);
-		philo->lastate = timestamp();
-		philo->ate++;
-		printf("%zu %d is sleeping\n", timestamp(), philo->number);
-		actualsleep(philo->vars->time_to_sleep);
-		printf("%zu %d is thinking\n", timestamp(), philo->number);
+		actualsleep(philo->time_to_eat);
+		unlockandsleep(philo);
 	}
 	return content;
 }
@@ -85,7 +90,10 @@ int endall(t_vars *vars)
 	}
 	i = 0;
 	while (i < vars->number_of_philosophers)
+	{
+		pthread_mutex_lock(&vars->forks[i]);
 		pthread_mutex_destroy(&vars->forks[i++]);
+	}
 	free(vars->forks);
 	free(vars->philosophers);
 	vars->over = 1;
@@ -135,7 +143,11 @@ void createthreads(t_vars *vars)
 		memset(vars->philosophers[i], 0, sizeof(t_philo));
 		vars->philosophers[i]->number = i + 1;
 		setforks(vars->philosophers[i], vars);
-		vars->philosophers[i]->vars = vars;
+		vars->philosophers[i]->number_of_philosophers = vars->number_of_philosophers;
+		vars->philosophers[i]->time_to_die = vars->time_to_die;
+		vars->philosophers[i]->time_to_eat = vars->time_to_eat;
+		vars->philosophers[i]->time_to_sleep = vars->time_to_sleep;
+		vars->philosophers[i]->number_of_times_each_philosopher_must_eat = vars->number_of_times_each_philosopher_must_eat;
 		pthread_create(&vars->philosophers[i]->id, 0, live, vars->philosophers[i]);
 		i++;
 	}
