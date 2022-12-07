@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/06 10:39:05 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/07 07:59:50 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/07 11:05:37 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,18 +22,22 @@ time_t timestamp(time_t start)
 	return ((tm.tv_sec * 1000) + (tm.tv_usec / 1000)) - start;
 }
 
-void actualsleep(time_t num, time_t start)
+int actualsleep(time_t num, time_t start, t_philo *philo)
 {
 	time_t end;
 
 	end = timestamp(start) + num;
-	while (timestamp(start) < end)
+	while (timestamp(start) < end
+		&& (philo == 0 || (!checkdeath(philo, 0))))
 		usleep(100);
+	return (1);
 }
 
 int checkdeath(t_philo *philo, int value)
 {
 	int ret;
+
+	ret = 0;
 	pthread_mutex_lock(&philo->deadlock);
 	if (!value)
 		ret = philo->dead;
@@ -56,6 +60,8 @@ void setforks(t_philo *philo, t_vars *vars)
 int checklastate(t_philo *philo, int val)
 {
 	int ret;
+
+	ret = 0;
 	pthread_mutex_lock(&philo->deadlock);
 	ret = philo->lastate;
 	if (val)
@@ -75,6 +81,25 @@ int checkate(t_philo *philo, int val)
 	return ret;
 }
 
+int printstate(t_philo *philo, int state)
+{
+	if (!checkdeath(philo, 0))
+	{
+		if (state == SLEEPING)
+			printf("%zu %d is sleeping\n", timestamp(philo->shared.start), philo->number);
+		if (state == EATING)
+			printf("%zu %d is eating\n", timestamp(philo->shared.start), philo->number);
+		if (state == DIED)
+			printf("%zu %d died\n", timestamp(philo->shared.start), philo->number);
+		if (state == THINKING)
+			printf("%zu %d is thinking\n", timestamp(philo->shared.start), philo->number);
+		if (state == FORK)
+			printf("%zu %d has taken a fork\n", timestamp(philo->shared.start), philo->number);
+		return (1);
+	}
+	return (0);
+}
+
 void unlockandsleep(t_philo *philo)
 {
 	if (checkdeath(philo, 0))
@@ -83,9 +108,17 @@ void unlockandsleep(t_philo *philo)
 	pthread_mutex_unlock(philo->right);
 	checklastate(philo, timestamp(philo->shared.start));
 	checkate(philo, 1);
-	printf("%zu %d is sleeping\n", timestamp(philo->shared.start), philo->number);
-	actualsleep(philo->shared.time_to_sleep, philo->shared.start);
-	printf("%zu %d is thinking\n", timestamp(philo->shared.start), philo->number);
+	printstate(philo, SLEEPING);
+	actualsleep(philo->shared.time_to_sleep, philo->shared.start, philo);
+	printstate(philo, THINKING);
+}
+
+int takefork(t_philo *philo, pthread_mutex_t *fork)
+{
+	if (!pthread_mutex_lock(fork) && !checkdeath(philo, 0)
+		&& printstate(philo, FORK))
+		return (1);
+	return (0);
 }
 
 void *live(void *content)
@@ -94,19 +127,18 @@ void *live(void *content)
 
 	philo = content;
 	if (philo->number % 2 == 0)
-		actualsleep(1, philo->shared.start);
+		actualsleep(1, philo->shared.start, philo);
 	while (!checkdeath(philo, 0))
 	{
-		pthread_mutex_lock(philo->right);
-		printf("%zu %d has taken a fork\n", timestamp(philo->shared.start), philo->number);
-		pthread_mutex_lock(philo->left);
-		printf("%zu %d has taken a fork\n", timestamp(philo->shared.start), philo->number);
-		if (checkdeath(philo, 0))
-			break ;
-		printf("%zu %d is eating\n", timestamp(philo->shared.start), philo->number);
-		actualsleep(philo->shared.time_to_eat, philo->shared.start);
-		unlockandsleep(philo);
+		if (takefork(philo, philo->right) && takefork(philo, philo->left))
+		{
+			printstate(philo, EATING);
+			actualsleep(philo->shared.time_to_eat, philo->shared.start, philo);
+			unlockandsleep(philo);
+		}
 	}
+	pthread_mutex_unlock(philo->left);
+	pthread_mutex_unlock(philo->right);
 	return content;
 }
 
@@ -163,7 +195,7 @@ int mainthread(t_vars *vars)
 		}
 		if (allate && vars->shared.number_of_times_each_philosopher_must_eat != 0)
 			return endall(vars);
-		actualsleep(10, vars->shared.start);
+		actualsleep(5, vars->shared.start, 0);
 	}
 }
 

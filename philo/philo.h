@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/06 10:39:12 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/07 07:54:59 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/07 11:02:32 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,9 +20,6 @@
 # include <unistd.h>
 # include <sys/time.h>
 # include <pthread.h>
-
-int	ft_atoi(const char *str);
-void ft_memcpy(void *dst, const void *src, size_t n);
 
 typedef struct s_vars t_vars;
 
@@ -40,6 +37,7 @@ typedef struct s_philo
 	int number;
 	int dead;
 	int ate;
+	int safe;
 
 	time_t lastate;
 	t_vars *vars;
@@ -50,6 +48,14 @@ typedef struct s_philo
 	t_shared shared;
 } t_philo;
 
+enum {
+	SLEEPING,
+	THINKING,
+	DIED,
+	EATING,
+	FORK
+};
+
 typedef struct s_vars
 {
 	t_shared shared;
@@ -57,5 +63,9 @@ typedef struct s_vars
 	t_philo **philosophers;
 	int over;
 } t_vars;
+
+int	ft_atoi(const char *str);
+void ft_memcpy(void *dst, const void *src, size_t n);
+int checkdeath(t_philo *philo, int value);
 
 #endif

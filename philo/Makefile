@@ -10,10 +10,10 @@ Files_O = $(Files:.c=.o)
 
 # Compiles every .c file into a .o file, $< referring to the prequisite while $@ the target
 %.o: %.c
-	gcc -Wall -Wextra -Werror -fsanitize=thread -pthread -c $< -o $@
+	gcc -Wall -Wextra -Werror -c $< -o $@
 
 $(NAME): $(Files_O)
-	gcc -Wall -Wextra -Werror -fsanitize=thread -pthread $(Files_O) -o $(NAME) 
+	gcc -Wall -Wextra -Werror $(Files_O) -o $(NAME) 
 
 bonus: $(NAME)
 
