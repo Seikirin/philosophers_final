@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/10/26 13:53:19 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/06 11:04:13 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/07 11:38:15 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,16 +51,16 @@ int	ft_atoi(const char *str)
 	return (final);
 }
 
-void ft_memcpy(void *dst, const void *src, size_t n)
+void	ft_memcpy(void *dst, const void *src, size_t n)
 {
-    size_t i;
+	size_t	i;
 
-    i = 0;
-    if (!dst && !src)
-        return ;
-    while (i < n)
-    {
-        ((unsigned char *)dst)[i] = ((unsigned char *)src)[i];
-        i++;
-    }
+	i = 0;
+	if (!dst && !src)
+		return ;
+	while (i < n)
+	{
+		((unsigned char *)dst)[i] = ((unsigned char *)src)[i];
+		i++;
+	}
 }
