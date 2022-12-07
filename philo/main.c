@@ -12,46 +12,80 @@
 
 #include "philo.h"
 
-time_t timestamp(void)
+time_t timestamp(time_t start)
 {
-	static time_t start;
 	struct timeval tm;
 
 	gettimeofday(&tm, NULL);
 	if (!start)
-		start = ((tm.tv_sec * 1000) + (tm.tv_usec / 1000));
+		return ((tm.tv_sec * 1000) + (tm.tv_usec / 1000));
 	return ((tm.tv_sec * 1000) + (tm.tv_usec / 1000)) - start;
 }
 
-void actualsleep(time_t num)
+void actualsleep(time_t num, time_t start)
 {
 	time_t end;
 
-	end = timestamp() + num;
-	while (timestamp() < end)
+	end = timestamp(start) + num;
+	while (timestamp(start) < end)
 		usleep(100);
 }
+
+int checkdeath(t_philo *philo, int value)
+{
+	int ret;
+	pthread_mutex_lock(&philo->deadlock);
+	if (!value)
+		ret = philo->dead;
+	else
+		philo->dead = 1;
+	pthread_mutex_unlock(&philo->deadlock);
+	return (ret);
+}
+
 
 void setforks(t_philo *philo, t_vars *vars)
 {
 	philo->right = &(vars->forks[philo->number - 1]);
-	if (philo->number >= vars->number_of_philosophers)
+	if (philo->number >= vars->shared.number_of_philosophers)
 		philo->left = &(vars->forks[0]);
 	else
 		philo->left = &(vars->forks[philo->number]);
 }
 
+int checklastate(t_philo *philo, int val)
+{
+	int ret;
+	pthread_mutex_lock(&philo->deadlock);
+	ret = philo->lastate;
+	if (val)
+		philo->lastate = val;
+	pthread_mutex_unlock(&philo->deadlock);
+	return ret;
+}
+
+int checkate(t_philo *philo, int val)
+{
+	int ret;
+	pthread_mutex_lock(&philo->deadlock);
+	ret = philo->ate;
+	if (val)
+		philo->ate++;
+	pthread_mutex_unlock(&philo->deadlock);
+	return ret;
+}
+
 void unlockandsleep(t_philo *philo)
 {
-	if (philo->dead)
+	if (checkdeath(philo, 0))
 		return ;
-	pthread_mutex_unlock(philo->right);
 	pthread_mutex_unlock(philo->left);
-	philo->lastate = timestamp();
-	philo->ate++;
-	printf("%zu %d is sleeping\n", timestamp(), philo->number);
-	actualsleep(philo->time_to_sleep);
-	printf("%zu %d is thinking\n", timestamp(), philo->number);
+	pthread_mutex_unlock(philo->right);
+	checklastate(philo, timestamp(philo->shared.start));
+	checkate(philo, 1);
+	printf("%zu %d is sleeping\n", timestamp(philo->shared.start), philo->number);
+	actualsleep(philo->shared.time_to_sleep, philo->shared.start);
+	printf("%zu %d is thinking\n", timestamp(philo->shared.start), philo->number);
 }
 
 void *live(void *content)
@@ -60,17 +94,17 @@ void *live(void *content)
 
 	philo = content;
 	if (philo->number % 2 == 0)
-		actualsleep(1);
-	while (!philo->dead)
+		actualsleep(1, philo->shared.start);
+	while (!checkdeath(philo, 0))
 	{
 		pthread_mutex_lock(philo->right);
-		printf("%zu %d has taken a fork\n", timestamp(), philo->number);
+		printf("%zu %d has taken a fork\n", timestamp(philo->shared.start), philo->number);
 		pthread_mutex_lock(philo->left);
-		printf("%zu %d has taken a fork\n", timestamp(), philo->number);
-		if (philo->dead)
+		printf("%zu %d has taken a fork\n", timestamp(philo->shared.start), philo->number);
+		if (checkdeath(philo, 0))
 			break ;
-		printf("%zu %d is eating\n", timestamp(), philo->number);
-		actualsleep(philo->time_to_eat);
+		printf("%zu %d is eating\n", timestamp(philo->shared.start), philo->number);
+		actualsleep(philo->shared.time_to_eat, philo->shared.start);
 		unlockandsleep(philo);
 	}
 	return content;
@@ -81,17 +115,23 @@ int endall(t_vars *vars)
 	int i;
 
 	i = 0;
-	while (i < vars->number_of_philosophers)
+	while (i < vars->shared.number_of_philosophers)
 	{
-		vars->philosophers[i]->dead = 1;
-		pthread_detach(vars->philosophers[i]->id);
+		checkdeath(vars->philosophers[i], 1);
+		i++;
+	}
+	i = 0;
+	while (i < vars->shared.number_of_philosophers)
+	{
+		pthread_join(vars->philosophers[i]->id, 0);
 		free(vars->philosophers[i]);
 		i++;
 	}
 	i = 0;
-	while (i < vars->number_of_philosophers)
+	while (i < vars->shared.number_of_philosophers)
 	{
 		pthread_mutex_lock(&vars->forks[i]);
+		pthread_mutex_unlock(&vars->forks[i]);
 		pthread_mutex_destroy(&vars->forks[i++]);
 	}
 	free(vars->forks);
@@ -110,20 +150,20 @@ int mainthread(t_vars *vars)
 	{
 		i = 0;
 		allate = 1;
-		while (i < vars->number_of_philosophers)
+		while (i < vars->shared.number_of_philosophers)
 		{
-			if (timestamp() - vars->philosophers[i]->lastate >= vars->time_to_die)
+			if (timestamp(vars->shared.start) - checklastate(vars->philosophers[i], 0) >= vars->shared.time_to_die)
 			{
-				printf("%zu %d died\n", timestamp(), i + 1);
+				printf("%zu %d died\n", timestamp(vars->shared.start), i + 1);
 				return endall(vars);
 			}
-			if (vars->philosophers[i]->ate < vars->number_of_times_each_philosopher_must_eat)
+			if (checkate(vars->philosophers[i], 0) < vars->shared.number_of_times_each_philosopher_must_eat)
 				allate = 0;
 			i++;
 		}
-		if (allate && vars->number_of_times_each_philosopher_must_eat != 0)
+		if (allate && vars->shared.number_of_times_each_philosopher_must_eat != 0)
 			return endall(vars);
-		actualsleep(5);
+		actualsleep(10, vars->shared.start);
 	}
 }
 
@@ -132,22 +172,20 @@ void createthreads(t_vars *vars)
 	int i;
 
 	i = 0;
-	vars->forks = malloc(vars->number_of_philosophers * sizeof(pthread_mutex_t));
-	while (i < vars->number_of_philosophers)
+	vars->forks = malloc(vars->shared.number_of_philosophers * sizeof(pthread_mutex_t));
+	while (i < vars->shared.number_of_philosophers)
 		pthread_mutex_init(&vars->forks[i++], 0);
 	i = 0;
-	vars->philosophers = malloc(vars->number_of_philosophers * sizeof(t_philo *));
-	while (i < vars->number_of_philosophers)
+	vars->philosophers = malloc(vars->shared.number_of_philosophers * sizeof(t_philo *));
+	vars->shared.start = timestamp(0);
+	while (i < vars->shared.number_of_philosophers)
 	{
 		vars->philosophers[i] = malloc(sizeof(t_philo));
 		memset(vars->philosophers[i], 0, sizeof(t_philo));
 		vars->philosophers[i]->number = i + 1;
 		setforks(vars->philosophers[i], vars);
-		vars->philosophers[i]->number_of_philosophers = vars->number_of_philosophers;
-		vars->philosophers[i]->time_to_die = vars->time_to_die;
-		vars->philosophers[i]->time_to_eat = vars->time_to_eat;
-		vars->philosophers[i]->time_to_sleep = vars->time_to_sleep;
-		vars->philosophers[i]->number_of_times_each_philosopher_must_eat = vars->number_of_times_each_philosopher_must_eat;
+		ft_memcpy(&vars->philosophers[i]->shared, &vars->shared, sizeof(t_shared));
+		pthread_mutex_init(&vars->philosophers[i]->deadlock, 0);
 		pthread_create(&vars->philosophers[i]->id, 0, live, vars->philosophers[i]);
 		i++;
 	}
@@ -160,12 +198,12 @@ int main(int argc, char **argv)
 	if (argc < 5)
 		return 0;
 	memset(&vars, 0, sizeof(t_vars));
-	vars.number_of_philosophers = ft_atoi(argv[1]);
-	vars.time_to_die = ft_atoi(argv[2]);
-	vars.time_to_eat = ft_atoi(argv[3]);
-	vars.time_to_sleep = ft_atoi(argv[4]);
+	vars.shared.number_of_philosophers = ft_atoi(argv[1]);
+	vars.shared.time_to_die = ft_atoi(argv[2]);
+	vars.shared.time_to_eat = ft_atoi(argv[3]);
+	vars.shared.time_to_sleep = ft_atoi(argv[4]);
 	if (argc > 5)
-		vars.number_of_times_each_philosopher_must_eat = ft_atoi(argv[5]);
+		vars.shared.number_of_times_each_philosopher_must_eat = ft_atoi(argv[5]);
 	createthreads(&vars);
 	return (0);
 }

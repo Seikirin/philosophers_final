@@ -10,13 +10,12 @@ Files_O = $(Files:.c=.o)
 
 # Compiles every .c file into a .o file, $< referring to the prequisite while $@ the target
 %.o: %.c
-	cc -Wall -Wextra -Werror -c $< -o $@
+	gcc -Wall -Wextra -Werror -fsanitize=thread -pthread -c $< -o $@
 
-$(NAME): fclean $(Files_O)
-	cc -Wall -Wextra -Werror $(Files_O) -o $(NAME) 
+$(NAME): $(Files_O)
+	gcc -Wall -Wextra -Werror -fsanitize=thread -pthread $(Files_O) -o $(NAME) 
 
-bonus: fclean $(Files_O)
-	cc -Wall -Wextra -Werror $(Files_O) -o $(NAME) 
+bonus: $(NAME)
 
 all: $(NAME)
 
