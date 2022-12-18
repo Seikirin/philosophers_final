@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/06 10:39:05 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/18 11:52:46 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/18 13:11:40 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -128,7 +128,7 @@ int processlife(t_shared shared, int number)
 	philo.sem = getsem("/forks", 0, 0, 0);
 	philo.deadlock = getsem("/data_", number, 0, 0);
 	if (philo.number % 2 == 0)
-		actualsleep(1, philo.shared.start, &philo);
+		actualsleep(5, philo.shared.start, &philo);
 	while (!checkdeath(&philo, 0, 1) && !checkate(&philo, -1))
 	{
 		if (takefork(&philo) && takefork(&philo))
@@ -172,22 +172,26 @@ void processmainthread(t_vars *vars)
 {
 	int i;
 	int allate;
+	sem_t **ateenoughs;
 
-	// printf("startng the main fucking thread\n");
+
+	ateenoughs = malloc(vars->shared.ph_n * sizeof(sem_t*));
+	memset(ateenoughs, 0, vars->shared.ph_n * sizeof(sem_t*));
 	while (getsem("/philodied", 0, 0, 0) == SEM_FAILED)
 	{
-		// printf("iterated\n");
 		i = 0;
 		allate = 1;
 		while (i < vars->shared.ph_n)
 		{
-			if (getsem("/ateenough", i + 1, 0, 0) == SEM_FAILED)
+			if (!ateenoughs[i] || ateenoughs[i] == SEM_FAILED)
+				ateenoughs[i] = getsem("/ateenough", i + 1, 0, 0);
+			if (ateenoughs[i] == SEM_FAILED)
 				allate = 0;
 			i++;
 		}
 		if (allate == 1)
 			break ;
-		usleep(1000);
+		usleep(10);
 	}
 	endall(vars);
 }

@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/07 12:13:13 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/18 09:54:43 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/18 12:50:42 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ int	actualsleep(time_t num, time_t start, t_philo *philo)
 	end = timestamp(start) + num;
 	while (timestamp(start) < end
 		&& (philo == 0 || (!checkdeath(philo, 0, 1))))
-		usleep(100);
+		usleep(10);
 	return (1);
 }
 
