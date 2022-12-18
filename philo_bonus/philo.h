@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/06 10:39:12 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/18 11:52:48 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/18 15:25:19 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,8 +45,8 @@ typedef struct s_philo
 	t_vars			*vars;
 	t_shared		shared;
 	pthread_t		id;
-	sem_t	*deadlock;
-	sem_t	*sem;
+	sem_t			*deadlock;
+	sem_t			*sem;
 
 }	t_philo;
 
@@ -64,7 +64,6 @@ typedef struct s_vars
 	t_philo			**philos;
 	pid_t			*pids;
 	int				over;
-	
 }	t_vars;
 
 int		ft_atoi(const char *str);
@@ -82,5 +81,9 @@ char	*ft_itoa(int n);
 void	postandsleep(t_philo *philo);
 sem_t	*getsem(const char *main, int number, int type, int value);
 int		checkwaiting(t_philo *philo, int val);
+int		processlife(t_shared shared, int number);
+char	*ft_strjoin(char *s1, char *s2);
+int		ft_strlen(char *str);
+void	endlife(t_philo *philo);
 
 #endif

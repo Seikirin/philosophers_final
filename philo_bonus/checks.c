@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/07 12:18:27 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/18 11:52:47 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/18 15:04:29 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,8 @@ int	checkdeath(t_philo *philo, int value, int all)
 	ret = 0;
 	sem_wait(philo->deadlock);
 	if (!value)
-		ret = (timestamp(philo->shared.start) - philo->lastate >= philo->shared.die_t);
+		ret = (timestamp(philo->shared.start) - philo->lastate
+				>= philo->shared.die_t);
 	else
 		philo->dead = 1;
 	sem_post(philo->deadlock);
@@ -66,4 +67,3 @@ int	checkwaiting(t_philo *philo, int val)
 	sem_post(philo->deadlock);
 	return (ret);
 }
-

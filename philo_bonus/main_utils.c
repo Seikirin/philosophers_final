@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/07 12:13:13 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/18 12:50:42 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/18 15:06:15 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,12 +35,12 @@ int	actualsleep(time_t num, time_t start, t_philo *philo)
 
 void	*runsem_wait(void *content)
 {
-	t_philo *philo;
-	
+	t_philo	*philo;
+
 	philo = content;
 	sem_wait(philo->sem);
 	checkwaiting(philo, 1);
-	return content;
+	return (content);
 }
 
 int	takefork(t_philo *philo)
