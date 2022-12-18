@@ -6,11 +6,11 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/09/29 15:25:39 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/11 11:41:25 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/12 12:07:28 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <string.h>
+#include "philo.h"
 
 size_t	ft_strlcpy(char *dst, const char *src, size_t dstsize)
 {
@@ -64,12 +64,10 @@ static void	ft_putnbr(int nb, char *str, int *i)
 
 char	*ft_itoa(int n)
 {
-	int		store;
 	char	str[13];
 	char	*final;
 	int		i;
 
-	store = n;
 	i = 0;
 	ft_putnbr(n, str, &i);
 	str[i] = '\0';

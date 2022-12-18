@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/07 12:13:13 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/11 11:17:20 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/18 09:54:43 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,44 +28,55 @@ int	actualsleep(time_t num, time_t start, t_philo *philo)
 
 	end = timestamp(start) + num;
 	while (timestamp(start) < end
-		&& (philo == 0 || (!checkdeath(philo, 0))))
+		&& (philo == 0 || (!checkdeath(philo, 0, 1))))
 		usleep(100);
 	return (1);
 }
 
-void	setforks(t_philo *philo, t_vars *vars)
+void	*runsem_wait(void *content)
 {
-	philo->right = &(vars->forks[philo->number - 1]);
-	if (philo->number >= vars->shared.ph_n)
-		philo->left = &(vars->forks[0]);
-	else
-		philo->left = &(vars->forks[philo->number]);
+	t_philo *philo;
+	
+	philo = content;
+	sem_wait(philo->sem);
+	checkwaiting(philo, 1);
+	return content;
 }
 
-// int	takefork(t_philo *philo, pthread_mutex_t *fork)
-// {
-// 	if (!pthread_mutex_lock(fork) && !checkdeath(philo, 0)
-// 		&& printstate(philo, FORK))
-// 		return (1);
-// 	return (0);
-// }
-
-int	printstate(time_t start, int number, int state)
+int	takefork(t_philo *philo)
 {
-	if (state == SLEEPING)
-		printf("%zu %d is sleeping\n",
-			timestamp(start), number);
-	if (state == EATING)
-		printf("%zu %d is eating\n",
-			timestamp(start), number);
-	if (state == DIED)
-		printf("%zu %d died\n",
-			timestamp(start), number);
-	if (state == THINKING)
-		printf("%zu %d is thinking\n",
-			timestamp(start), number);
-	if (state == FORK)
-		printf("%zu %d has taken a fork\n",
-			timestamp(start), number);
+	philo->waiting = 1;
+	pthread_create(&philo->id, 0, runsem_wait, philo);
+	while (checkwaiting(philo, 0) && !checkdeath(philo, 0, 1))
+		usleep(10);
+	if (checkwaiting(philo, 0))
+		return (0);
+	if (!checkdeath(philo, 0, 1)
+		&& printstate(philo, FORK))
+		return (1);
+	return (0);
+}
+
+int	printstate(t_philo *philo, int state)
+{
+	if (!checkdeath(philo, 0, 1))
+	{
+		if (state == SLEEPING)
+			printf("%zu %d is sleeping\n",
+				timestamp(philo->shared.start), philo->number);
+		if (state == EATING)
+			printf("%zu %d is eating\n",
+				timestamp(philo->shared.start), philo->number);
+		if (state == DIED)
+			printf("%zu %d died\n",
+				timestamp(philo->shared.start), philo->number);
+		if (state == THINKING)
+			printf("%zu %d is thinking\n",
+				timestamp(philo->shared.start), philo->number);
+		if (state == FORK)
+			printf("%zu %d has taken a fork\n",
+				timestamp(philo->shared.start), philo->number);
+		return (1);
+	}
 	return (0);
 }

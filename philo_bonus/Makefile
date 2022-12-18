@@ -3,7 +3,7 @@ NAME = philo
 Libft = libft/libft.a
 
 # Use ls -m *.c | tr -d "," | tr -d "\n" | sed "s/ ft_[a-z_]*_bonus.c//g"
-Files = main.c ft_atoi.c main_utils.c checks.c life.c
+Files = main.c ft_atoi.c main_utils.c checks.c life.c ft_itoa.c
 
 # Replaces the .c in each file to .o
 Files_O = $(Files:.c=.o)

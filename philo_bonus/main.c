@@ -6,36 +6,67 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/06 10:39:05 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/11 11:20:22 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/18 11:52:46 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philo.h"
-#include <semaphore.h>
+
+int ft_strlen(char *str)
+{
+	int i;
+
+	i = 0;
+	while (str && str[i])
+		i++;
+	return (i);
+}
+
+char	*ft_strjoin(char *s1, char *s2)
+{
+	int		i;
+	int		k;
+	int		j;
+	char	*ret;
+
+	i = 0;
+	k = 0;
+	j = 0;
+	if (!s1 || !s2)
+		return (0);
+	ret = (char *)malloc(ft_strlen(s1) + ft_strlen(s2) + 1);
+	if (!ret)
+		return (0);
+	while (s1[k] != '\0')
+		ret[i++] = s1[k++];
+	while (s2[j] != '\0')
+		ret[i++] = s2[j++];
+	ret[i] = '\0';
+	free(s2);
+	return (ret);
+}
+
+void unlinkallsemaphores(int murder, t_vars *vars)
+{
+	int i;
+
+	i = 0;
+	while (i < vars->shared.ph_n)
+	{
+		if (murder)
+			kill(vars->pids[i], SIGINT);
+		getsem("/data_", i + 1, 2, 1);
+		getsem("/ateenough", i + 1, 2, 1);
+		i++;
+	}
+	getsem("/philodied", 0, 2, 1);
+	getsem("/forks", 0, 2, 1);
+}
 
 int	endall(t_vars *vars)
 {
-	int	i;
-
-	i = 0;
-	while (i < vars->shared.ph_n)
-		checkdeath(vars->philos[i++], 1);
-	i = 0;
-	while (i < vars->shared.ph_n)
-	{
-		pthread_join(vars->philos[i]->id, 0);
-		free(vars->philos[i++]);
-	}
-	i = 0;
-	while (i < vars->shared.ph_n)
-	{
-		pthread_mutex_lock(&vars->forks[i]);
-		pthread_mutex_unlock(&vars->forks[i]);
-		pthread_mutex_destroy(&vars->forks[i++]);
-	}
-	free(vars->forks);
-	free(vars->philos);
-	vars->over = 1;
+	unlinkallsemaphores(1, vars);
+	free(vars->pids);
 	return (0);
 }
 
@@ -66,70 +97,126 @@ int	mainthread(t_vars *vars)
 	}
 }
 
-void bonuslife(t_shared shared, int number)
+sem_t *getsem(const char *main, int number, int type, int value)
 {
-	sem_t *sem;
+	char *str;
+	sem_t *ret;
 
-	sem = sem_open("/forks", O_CREAT);
-	while (1)
-	{
-		sem_wait(sem);
-		printstate(shared.start, number, FORK);
-		sem_wait(sem);
-		printstate(shared.start, number, FORK);
-		printstate(shared.start, number, EATING);
-		actualsleep(shared.eat_t, shared.start, 0);
-		sem_post(sem);
-		sem_post(sem);
-		printstate(shared.start, number, SLEEPING);
-		actualsleep(shared.sleep_t, shared.start, 0);
-	}
+	ret = 0;
+	if (number)
+		str = ft_strjoin((char *)main, ft_itoa(number));
+	else
+		str = (char *)main;
+	if (!type)
+		ret = sem_open(str, O_RDWR);
+	else if (type == 2)
+		sem_unlink(str);
+	else
+		ret = sem_open(str, O_CREAT, 0777, value);
+	if (number)
+		free(str);
+	return (ret);
 }
 
-void	createthreads(t_vars *vars)
+int processlife(t_shared shared, int number)
 {
-	int	i;
-	int pid;
+	t_philo philo;
 
+	memset(&philo, 0, sizeof(t_philo));
+	philo.number = number;
+	philo.shared = shared;
+	philo.sem = getsem("/forks", 0, 0, 0);
+	philo.deadlock = getsem("/data_", number, 0, 0);
+	if (philo.number % 2 == 0)
+		actualsleep(1, philo.shared.start, &philo);
+	while (!checkdeath(&philo, 0, 1) && !checkate(&philo, -1))
+	{
+		if (takefork(&philo) && takefork(&philo))
+		{
+			printstate(&philo, EATING);
+			actualsleep(philo.shared.eat_t, philo.shared.start, &philo);
+			postandsleep(&philo);
+		}
+	}
+	if (checkdeath(&philo, 0, 0) && getsem("/philodied", 0, 0, 0) == SEM_FAILED)
+	{
+		sem_wait(getsem("/philodied", 0, 1, 1));
+		printf("%zu %d died\n", timestamp(philo.shared.start), number);
+	}
+	else if (checkate(&philo, -1))
+	{
+		getsem("/ateenough", number, 1, 1);
+		printf("%zu %d ate enough\n", timestamp(philo.shared.start), number);
+	}
+	sem_post(philo.sem);
+	sem_post(philo.sem);
+	return (0);
+}
+
+void	postandsleep(t_philo *philo)
+{
+	if (checkdeath(philo, 0, 1))
+		return ;
+	sem_post(philo->sem);
+	sem_post(philo->sem);
+	checklastate(philo, timestamp(philo->shared.start));
+	checkate(philo, 1);
+	if (checkate(philo, -1))
+		return ;
+	printstate(philo, SLEEPING);
+	actualsleep(philo->shared.sleep_t, philo->shared.start, philo);
+	printstate(philo, THINKING);
+}
+
+void processmainthread(t_vars *vars)
+{
+	int i;
+	int allate;
+
+	// printf("startng the main fucking thread\n");
+	while (getsem("/philodied", 0, 0, 0) == SEM_FAILED)
+	{
+		// printf("iterated\n");
+		i = 0;
+		allate = 1;
+		while (i < vars->shared.ph_n)
+		{
+			if (getsem("/ateenough", i + 1, 0, 0) == SEM_FAILED)
+				allate = 0;
+			i++;
+		}
+		if (allate == 1)
+			break ;
+		usleep(1000);
+	}
+	endall(vars);
+}
+
+int createprocesses(t_vars *vars)
+{
+	int i;
 	sem_t *sem;
-	
-	sem = sem_open("/forks", O_CREAT, S_IRWXO, vars->shared.ph_n); 
-	// i = 0;
-	// vars->forks = malloc(vars->shared.ph_n * sizeof(pthread_mutex_t));
-	// while (i < vars->shared.ph_n)
-	// 	pthread_mutex_init(&vars->forks[i++], 0);
+	pid_t pid;
 
-	// i = 0;
-	// vars->philos = malloc(vars->shared.ph_n * sizeof(t_philo *));
-	vars->shared.start = timestamp(0);
-	// while (i < vars->shared.ph_n)
-	// {
-	// 	vars->philos[i] = malloc(sizeof(t_philo));
-	// 	memset(vars->philos[i], 0, sizeof(t_philo));
-	// 	vars->philos[i]->number = i + 1;
-	// 	// setforks(vars->philos[i], vars);
-	// 	ft_memcpy(&vars->philos[i]->shared, &vars->shared, sizeof(t_shared));
-	// 	pthread_create(&vars->philos[i]->id, 0, live, vars->philos[i]);
-	// 	i++;
-	// }
-
-	// mainthread(vars);	
 	i = 0;
+	vars->pids = malloc(sizeof(pid_t) * vars->shared.ph_n);
+	unlinkallsemaphores(0, vars);
+	sem = sem_open("/forks", O_CREAT, 0777, vars->shared.ph_n);
+	vars->shared.start = timestamp(0);
 	while (i < vars->shared.ph_n)
 	{
 		pid = fork();
 		if (pid == 0)
 		{
-			bonuslife(vars->shared, i);
-			break;
+			free(vars->pids);
+			return processlife(vars->shared, i + 1);
 		}
+		else
+			vars->pids[i] = pid;
 		i++;
 	}
-	if (pid != 0)
-	{
-		
-	}
-
+	processmainthread(vars);
+	return (0);
 }
 
 int	main(int argc, char **argv)
@@ -145,6 +232,6 @@ int	main(int argc, char **argv)
 	vars.shared.sleep_t = ft_atoi(argv[4]);
 	if (argc > 5)
 		vars.shared.eat_m = ft_atoi(argv[5]);
-	createthreads(&vars);
+	createprocesses(&vars);
 	return (0);
 }

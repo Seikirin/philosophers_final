@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/06 10:39:12 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/11 11:43:56 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/18 11:52:48 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,8 @@
 # include <unistd.h>
 # include <sys/time.h>
 # include <pthread.h>
+# include <semaphore.h>
+# include <signal.h>
 
 typedef struct s_vars	t_vars;
 
@@ -38,13 +40,14 @@ typedef struct s_philo
 	int				dead;
 	int				ate;
 	int				safe;
+	int				waiting;
 	time_t			lastate;
 	t_vars			*vars;
 	t_shared		shared;
 	pthread_t		id;
-	pthread_mutex_t	*right;
-	pthread_mutex_t	*left;
-	pthread_mutex_t	deadlock;
+	sem_t	*deadlock;
+	sem_t	*sem;
+
 }	t_philo;
 
 enum {
@@ -58,27 +61,26 @@ enum {
 typedef struct s_vars
 {
 	t_shared		shared;
-	pthread_mutex_t	*forks;
 	t_philo			**philos;
+	pid_t			*pids;
 	int				over;
+	
 }	t_vars;
 
 int		ft_atoi(const char *str);
 void	ft_memcpy(void *dst, const void *src, size_t n);
 time_t	timestamp(time_t start);
 int		actualsleep(time_t num, time_t start, t_philo *philo);
-int		checkdeath(t_philo *philo, int value);
-void	setforks(t_philo *philo, t_vars *vars);
+int		checkdeath(t_philo *philo, int value, int all);
 int		checklastate(t_philo *philo, int val);
 int		checkate(t_philo *philo, int val);
-int		printstate(time_t start, int number, int state);
-void	unlockandsleep(t_philo *philo);
-// int		takefork(t_philo *philo, pthread_mutex_t *fork);
-void	*live(void *content);
+int		printstate(t_philo *philo, int state);
+int		takefork(t_philo *philo);
 int		endall(t_vars *vars);
 int		mainthread(t_vars *vars);
-void	createthreads(t_vars *vars);
-char	*ft_strjoin(char const *s1, char *s2);
 char	*ft_itoa(int n);
+void	postandsleep(t_philo *philo);
+sem_t	*getsem(const char *main, int number, int type, int value);
+int		checkwaiting(t_philo *philo, int val);
 
 #endif
