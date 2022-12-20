@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/07 12:13:13 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/20 11:25:48 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/20 11:55:41 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,6 +61,7 @@ int	printstate(t_philo *philo, int state)
 {
 	if (!checkdeath(philo, 0, 1))
 	{
+		sem_wait(philo->print);
 		if (state == SLEEPING)
 			printf("%zu %d is sleeping\n",
 				timestamp(philo->shared.start), philo->number);
@@ -76,6 +77,7 @@ int	printstate(t_philo *philo, int state)
 		if (state == FORK)
 			printf("%zu %d has taken a fork\n",
 				timestamp(philo->shared.start), philo->number);
+		sem_post(philo->print);
 		return (1);
 	}
 	return (0);

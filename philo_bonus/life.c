@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/07 12:17:49 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/20 11:29:40 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/20 13:26:47 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,7 @@ int	processlife(t_shared shared, int number)
 	philo.shared = shared;
 	philo.sem = getsem("/forks", 0, 0, 0);
 	philo.deadlock = getsem("/data_", number, 0, 0);
+	philo.deadlock = getsem("/print", number, 0, 0);
 	if (philo.number % 2 == 0)
 		actualsleep(5, philo.shared.start, &philo);
 	while (!checkdeath(&philo, 0, 1) && !checkate(&philo, -1))
@@ -54,7 +55,6 @@ int	processlife(t_shared shared, int number)
 			actualsleep(philo.shared.eat_t, philo.shared.start, &philo);
 			postandsleep(&philo);
 		}
-		usleep(100);
 	}
 	endlife(&philo);
 	return (0);
@@ -77,15 +77,19 @@ void	endlife(t_philo *philo)
 {
 	if (checkdeath(philo, 0, 0) && getsem("/philodied", 0, 0, 0) == SEM_FAILED)
 	{
+		sem_wait(getsem("/philodied", 0, 1, 1));
+		sem_wait(philo->print);
 		printf("%zu %d died\n",
 			timestamp(philo->shared.start), philo->number);
-		sem_wait(getsem("/philodied", 0, 1, 1));
+		sem_post(philo->print);
 	}
 	else if (checkate(philo, -1))
 	{
 		getsem("/ateenough", philo->number, 1, 1);
+		sem_wait(philo->print);
 		printf("%zu %d ate enough\n",
 			timestamp(philo->shared.start), philo->number);
+		sem_post(philo->print);
 	}
 	sem_post(philo->sem);
 	sem_post(philo->sem);

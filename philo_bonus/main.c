@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/06 10:39:05 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/20 11:28:14 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/20 11:52:40 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,7 @@ void	unlinkallsemaphores(int murder, t_vars *vars)
 	while (i < vars->shared.ph_n)
 		waitpid(vars->pids[i++], 0, 0);
 	getsem("/philodied", 0, 2, 1);
+	getsem("/print", 0, 2, 1);
 }
 
 int	endall(t_vars *vars)
@@ -71,13 +72,13 @@ void	processmainthread(t_vars *vars)
 int	createprocesses(t_vars *vars)
 {
 	int		i;
-	sem_t	*sem;
 	pid_t	pid;
 
 	i = 0;
 	vars->pids = malloc(sizeof(pid_t) * vars->shared.ph_n);
 	unlinkallsemaphores(0, vars);
-	sem = sem_open("/forks", O_CREAT, 0777, vars->shared.ph_n);
+	sem_open("/forks", O_CREAT, 0777, vars->shared.ph_n);
+	sem_open("/print", O_CREAT, 0777, 1);
 	vars->shared.start = timestamp(0);
 	while (i < vars->shared.ph_n)
 	{

@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/06 10:39:12 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/19 08:37:16 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/20 11:53:35 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,6 +46,7 @@ typedef struct s_philo
 	t_shared		shared;
 	pthread_t		id;
 	sem_t			*deadlock;
+	sem_t			*print;
 	sem_t			*sem;
 
 }	t_philo;
