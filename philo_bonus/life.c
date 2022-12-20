@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/07 12:17:49 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/19 08:37:18 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/20 11:29:40 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,9 +49,12 @@ int	processlife(t_shared shared, int number)
 		if (takefork(&philo) && takefork(&philo))
 		{
 			printstate(&philo, EATING);
+			checklastate(&philo, timestamp(philo.shared.start));
+			checkate(&philo, 1);
 			actualsleep(philo.shared.eat_t, philo.shared.start, &philo);
 			postandsleep(&philo);
 		}
+		usleep(100);
 	}
 	endlife(&philo);
 	return (0);
@@ -63,8 +66,6 @@ void	postandsleep(t_philo *philo)
 		return ;
 	sem_post(philo->sem);
 	sem_post(philo->sem);
-	checklastate(philo, timestamp(philo->shared.start));
-	checkate(philo, 1);
 	if (checkate(philo, -1))
 		return ;
 	printstate(philo, SLEEPING);
@@ -76,9 +77,9 @@ void	endlife(t_philo *philo)
 {
 	if (checkdeath(philo, 0, 0) && getsem("/philodied", 0, 0, 0) == SEM_FAILED)
 	{
-		sem_wait(getsem("/philodied", 0, 1, 1));
 		printf("%zu %d died\n",
 			timestamp(philo->shared.start), philo->number);
+		sem_wait(getsem("/philodied", 0, 1, 1));
 	}
 	else if (checkate(philo, -1))
 	{
