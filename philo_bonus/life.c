@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/07 12:17:49 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/20 13:26:47 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/21 08:07:53 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,6 +55,7 @@ int	processlife(t_shared shared, int number)
 			actualsleep(philo.shared.eat_t, philo.shared.start, &philo);
 			postandsleep(&philo);
 		}
+		usleep(100);
 	}
 	endlife(&philo);
 	return (0);

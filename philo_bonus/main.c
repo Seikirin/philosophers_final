@@ -6,7 +6,7 @@
 /*   By: mcharrad <mcharrad@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/06 10:39:05 by mcharrad          #+#    #+#             */
-/*   Updated: 2022/12/20 11:52:40 by mcharrad         ###   ########.fr       */
+/*   Updated: 2022/12/21 08:07:21 by mcharrad         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,8 +26,8 @@ void	unlinkallsemaphores(int murder, t_vars *vars)
 		getsem("/ateenough", i + 1, 2, 1);
 		i++;
 	}
-	i = 0;
 	getsem("/forks", 0, 2, 1);
+	i = 0;
 	while (i < vars->shared.ph_n)
 		waitpid(vars->pids[i++], 0, 0);
 	getsem("/philodied", 0, 2, 1);
@@ -60,10 +60,10 @@ void	processmainthread(t_vars *vars)
 			if (ateenoughs[i] == SEM_FAILED)
 				allate = 0;
 			i++;
+			usleep(100);
 		}
 		if (allate == 1)
 			break ;
-		usleep(100);
 	}
 	free(ateenoughs);
 	endall(vars);
